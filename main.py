@@ -24,9 +24,9 @@ dp = Dispatcher(bot=bot, storage=storage)
 connection = psycopg2.connect(
     database="railway",
     user='postgres',
-    password="iZKBnQibSfBrFumGwdpCeYGwfSCpVvHb",
-    host="roundhouse.proxy.rlwy.net",
-    port="18445",
+    password="PmULTRpTosfVfJTNzOyPfIWhPwyHRDqo",
+    host="monorail.proxy.rlwy.net",
+    port="42320",
 )
 connection.autocommit = True
 cursor = connection.cursor()
