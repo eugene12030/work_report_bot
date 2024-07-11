@@ -22,11 +22,11 @@ bot = Bot(token=API_TOKEN)
 dp = Dispatcher(bot=bot, storage=storage)
 
 connection = psycopg2.connect(
-    database="test",
+    database="railway",
     user='postgres',
-    password="1234",
-    host="localhost",
-    port="5432",
+    password="iZKBnQibSfBrFumGwdpCeYGwfSCpVvHb",
+    host="roundhouse.proxy.rlwy.net",
+    port="18445",
 )
 connection.autocommit = True
 cursor = connection.cursor()
