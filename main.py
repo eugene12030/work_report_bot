@@ -218,6 +218,7 @@ async def get_work_place(message: Message, state: FSMContext):
         work_hours = (end_time - start_time).seconds // 3600
         overtime = 0
         work_hours -= 1
+        work_hours = max(work_hours, 0)
         if work_hours > 8:
             overtime = work_hours - 8
             work_hours = 8
