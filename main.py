@@ -44,7 +44,7 @@ class Koef_change(StatesGroup):
 
 
 admin_ids = [911018424]
-koef = (445, 668, 500, 1)
+koef = (445, 668, 500, 500)
 
 
 @dp.message(Command('admin'))
