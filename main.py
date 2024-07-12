@@ -66,7 +66,7 @@ async def start(message: Message, state: FSMContext):
     users_id = cursor.fetchall()
     users_id = [int(x[0]) for x in users_id]
     if message.from_user.id not in users_id:
-        await message.answer("Введите ваше имя")
+        await message.answer("Введите ваше ФИО")
         await state.set_state(InitForm.name)
     else:
         await message.answer("Ваш id уже зарегистрирован")
