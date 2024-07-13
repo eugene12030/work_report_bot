@@ -66,7 +66,7 @@ async def start(message: Message, state: FSMContext):
     users_id = cursor.fetchall()
     users_id = [int(x[0]) for x in users_id]
     if message.from_user.id not in users_id:
-        await message.answer("Введите ваше ФИО")
+        await message.answer("Введите свое ФИО")
         await state.set_state(InitForm.name)
     else:
         await message.answer("Ваш id уже зарегистрирован")
@@ -219,16 +219,19 @@ async def get_work_place(message: Message, state: FSMContext):
         overtime = 0
         work_hours -= 1
         work_hours = max(work_hours, 0)
-        if work_hours > 8:
-            overtime = work_hours - 8
-            work_hours = 8
         cursor.execute(
             f"SELECT worktime_storage, worktime_storage_overtime, worktime_montage, worktime_montage_overtime FROM workers WHERE id = '{worker_id}'")
         cur_stats = cursor.fetchall()[0]
         if work_place == "Склад":
+            if work_hours > 8:
+                overtime = work_hours - 8
+                work_hours = 8
             cursor.execute(
                 f"UPDATE workers SET worktime_storage = {cur_stats[0] + work_hours}, worktime_storage_overtime = {cur_stats[1] + overtime} WHERE id = '{worker_id}'")
         if work_place == "Монтаж":
+            if work_hours > 12:
+                overtime = work_hours - 12
+                work_hours = 12
             cursor.execute(
                 f"UPDATE workers SET worktime_montage = {cur_stats[2] + work_hours}, worktime_montage_overtime = {cur_stats[3] + overtime} WHERE id = '{worker_id}'")
         cursor.execute(f"UPDATE workers SET status = 0 WHERE id = '{worker_id}'")
