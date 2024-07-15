@@ -146,7 +146,7 @@ async def handle_callback_query(callback_query: CallbackQuery, state: FSMContext
         cursor.execute(
             f"SELECT worktime_storage, worktime_storage_overtime, worktime_montage, worktime_montage_overtime FROM workers WHERE id = '{worker_id}'")
         cur_stats = cursor.fetchall()[0]
-        cursor.execute(f"select storage, storage_overtime, montage, montage_overtime from koef where id = 1")
+        cursor.execute(f"SELECT storage, storage_overtime, montage, montage_overtime FROM koef WHERE id = 1")
         koef = cursor.fetchall()[0]
         await callback_query.message.answer(f"В этом месяце вы проработали:\n"
                                             f"Склад : {cur_stats[0]} часов (+ {cur_stats[1]} часов сверхурочными)\n"
@@ -154,7 +154,7 @@ async def handle_callback_query(callback_query: CallbackQuery, state: FSMContext
                                             f"Вы заработали : {cur_stats[0] * koef[0] + cur_stats[1] * koef[1] + cur_stats[2] * koef[2] + cur_stats[3] * koef[3]} рублей")
 
     elif callback_query.data == "get_work_report":
-        cursor.execute(f"select storage, storage_overtime, montage, montage_overtime from koef where id = 1")
+        cursor.execute(f"SELECT storage, storage_overtime, montage, montage_overtime FROM koef WHERE id = 1")
         koef = cursor.fetchall()[0]
         df = pd.read_sql('SELECT * FROM workers', connection)
         df = df.drop(columns=['status', 'last_start_of_day'])
