@@ -148,6 +148,7 @@ async def handle_callback_query(callback_query: CallbackQuery, state: FSMContext
         cur_stats = cursor.fetchall()[0]
         cursor.execute(f"SELECT storage, storage_overtime, montage, montage_overtime FROM koef WHERE id = 1")
         koef = cursor.fetchall()[0]
+        print(koef)
         await callback_query.message.answer(f"В этом месяце вы проработали:\n"
                                             f"Склад : {cur_stats[0]} часов (+ {cur_stats[1]} часов сверхурочными)\n"
                                             f"Монтаж : {cur_stats[2]} часов (+ {cur_stats[3]} часов сверхурочными)\n"
