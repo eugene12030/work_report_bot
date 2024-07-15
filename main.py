@@ -44,7 +44,7 @@ class Koef_change(StatesGroup):
 
 
 admin_ids = [911018424, 478580891, 273205509]
-koef = (445, 668, 500, 500)
+#koef = (445, 668, 500, 500)
 
 
 @dp.message(Command('admin'))
@@ -146,12 +146,16 @@ async def handle_callback_query(callback_query: CallbackQuery, state: FSMContext
         cursor.execute(
             f"SELECT worktime_storage, worktime_storage_overtime, worktime_montage, worktime_montage_overtime FROM workers WHERE id = '{worker_id}'")
         cur_stats = cursor.fetchall()[0]
+        cursor.execute(f"select storage, storage_overtime, montage, montage_overtime from koef where id = 1")
+        koef = cursor.fetchall()[0]
         await callback_query.message.answer(f"В этом месяце вы проработали:\n"
                                             f"Склад : {cur_stats[0]} часов (+ {cur_stats[1]} часов сверхурочными)\n"
                                             f"Монтаж : {cur_stats[2]} часов (+ {cur_stats[3]} часов сверхурочными)\n"
                                             f"Вы заработали : {cur_stats[0] * koef[0] + cur_stats[1] * koef[1] + cur_stats[2] * koef[2] + cur_stats[3] * koef[3]} рублей")
 
     elif callback_query.data == "get_work_report":
+        cursor.execute(f"select storage, storage_overtime, montage, montage_overtime from koef where id = 1")
+        koef = cursor.fetchall()[0]
         df = pd.read_sql('SELECT * FROM workers', connection)
         df = df.drop(columns=['status', 'last_start_of_day'])
         df = df.rename(columns=dict(zip(['name', 'worktime_storage', 'worktime_storage_overtime', 'worktime_montage', 'worktime_montage_overtime'],
@@ -196,7 +200,7 @@ async def change_koef(message: Message, state: FSMContext):
     new_koef = data['new_koef']
     try:
         new_koef = tuple(map(int, new_koef.split(",")))
-        koef = new_koef
+        cursor.execute(f"update koef set storage = {new_koef[0]}, storage_overtime = {new_koef[1]}, montage = {new_koef[2]}, montage_overtime = {new_koef[3]}")
         await message.answer(f"Cтавка изменена")
     except:
         await message.answer("Неверный формат данных")
