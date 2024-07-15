@@ -146,6 +146,7 @@ async def handle_callback_query(callback_query: CallbackQuery, state: FSMContext
         cursor.execute(
             f"SELECT worktime_storage, worktime_storage_overtime, worktime_montage, worktime_montage_overtime FROM workers WHERE id = '{worker_id}'")
         cur_stats = cursor.fetchall()[0]
+        print(cur_stats)
         cursor.execute(f"SELECT storage, storage_overtime, montage, montage_overtime FROM koef WHERE id = 1")
         koef = cursor.fetchall()[0]
         print(koef)
