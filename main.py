@@ -43,7 +43,7 @@ class Koef_change(StatesGroup):
     new_koef = State()
 
 
-admin_ids = [911018424]
+admin_ids = [911018424, 478580891, 273205509]
 koef = (445, 668, 500, 500)
 
 
