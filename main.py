@@ -214,7 +214,7 @@ async def change_koef2(message: Message, state: FSMContext):
     try:
         new_koef = tuple(map(int, new_koef.split(",")))
         cursor.execute(
-            f"update wokrers set koef_storage = {new_koef[0]}, koef_storage_overtime = {new_koef[1]}, koef_montage = {new_koef[2]}, koef_montage_overtime = {new_koef[3]} WHERE name = {worker_name}")
+            f"update wokrers set koef_storage = {new_koef[0]}, koef_storage_overtime = {new_koef[1]}, koef_montage = {new_koef[2]}, koef_montage_overtime = {new_koef[3]} WHERE name = '{worker_name}'")
         await message.answer(f"Cтавка изменена")
     except:
         await message.answer("Неверный формат данных")
