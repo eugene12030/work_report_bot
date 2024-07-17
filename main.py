@@ -150,7 +150,7 @@ async def handle_callback_query(callback_query: CallbackQuery, state: FSMContext
             f"SELECT worktime_storage, worktime_storage_overtime, worktime_montage, worktime_montage_overtime FROM workers WHERE id = '{worker_id}'")
         cur_stats = cursor.fetchall()[0]
         cursor.execute(
-            f"SELECT koef_storage, koef_storage_overtime, koef_montage, koef_montage_overtime FROM workers WHERE id = {worker_id}")
+            f"SELECT koef_storage, koef_storage_overtime, koef_montage, koef_montage_overtime FROM workers WHERE id = '{worker_id}'")
         koef = cursor.fetchall()[0]
         await callback_query.message.answer(f"В этом месяце вы проработали:\n"
                                             f"Склад : {cur_stats[0]} часов (+ {cur_stats[1]} часов сверхурочными)\n"
