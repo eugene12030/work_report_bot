@@ -39,12 +39,14 @@ class InitForm(StatesGroup):
 class WorkPlace(StatesGroup):
     work_place = State()
 
+
 class Koef_change(StatesGroup):
+    name = State()
     new_koef = State()
 
 
 admin_ids = [911018424, 478580891, 273205509]
-#koef = (445, 668, 500, 500)
+std_koef = (445, 668, 500, 500)
 
 
 @dp.message(Command('admin'))
@@ -82,8 +84,9 @@ async def process_name(message: Message, state: FSMContext):
     users_name = cursor.fetchall()
     users_name = [x[0] for x in users_name]
     if name not in users_name:
-        query = f"INSERT INTO workers (id, name, worktime_storage, worktime_storage_overtime, worktime_montage, worktime_montage_overtime, status) VALUES ('{message.from_user.id}', '{name}', 0, 0, 0, 0, 0);"
+        query = f"INSERT INTO workers (id, name, worktime_storage, worktime_storage_overtime, worktime_montage, worktime_montage_overtime, status, koef_storage, koef_storage_overtime, koef_montage, koef_montage_overtime) VALUES ('{message.from_user.id}', '{name}', 0, 0, 0, 0, 0, 445, 668, 500, 500);"
         cursor.execute(query)
+        # cursor.execute(f'INSERT INTO koef (id , storage, storage_overtime, montage, montage_overtime) VALUES ("{message.from_user.id}", 445, 668, 500, 500)')
         await message.answer("Вы успешно зарегистрированы")
     else:
         await message.answer("Ваше имя уже используется")
@@ -146,7 +149,8 @@ async def handle_callback_query(callback_query: CallbackQuery, state: FSMContext
         cursor.execute(
             f"SELECT worktime_storage, worktime_storage_overtime, worktime_montage, worktime_montage_overtime FROM workers WHERE id = '{worker_id}'")
         cur_stats = cursor.fetchall()[0]
-        cursor.execute(f"SELECT storage, storage_overtime, montage, montage_overtime FROM koef WHERE id = 1")
+        cursor.execute(
+            f"SELECT koef_storage, koef_storage_overtime, koef_montage, koef_montage_overtime FROM workers WHERE id = {worker_id}")
         koef = cursor.fetchall()[0]
         await callback_query.message.answer(f"В этом месяце вы проработали:\n"
                                             f"Склад : {cur_stats[0]} часов (+ {cur_stats[1]} часов сверхурочными)\n"
@@ -154,17 +158,17 @@ async def handle_callback_query(callback_query: CallbackQuery, state: FSMContext
                                             f"Вы заработали : {cur_stats[0] * koef[0] + cur_stats[1] * koef[1] + cur_stats[2] * koef[2] + cur_stats[3] * koef[3]} рублей")
 
     elif callback_query.data == "get_work_report":
-        cursor.execute(f"SELECT storage, storage_overtime, montage, montage_overtime FROM koef WHERE id = 1")
-        koef = cursor.fetchall()[0]
         df = pd.read_sql('SELECT * FROM workers', connection)
         df = df.drop(columns=['status', 'last_start_of_day'])
-        df = df.rename(columns=dict(zip(['name', 'worktime_storage', 'worktime_storage_overtime', 'worktime_montage', 'worktime_montage_overtime'],
+        df = df.rename(columns=dict(zip(['name', 'worktime_storage', 'worktime_storage_overtime', 'worktime_montage',
+                                         'worktime_montage_overtime'],
                                         ['Имя', "ВрС, ч", 'ВрС п/раб', 'ВрМ, ч', 'ВрМ п/раб'])))
-        df['ЗпС'] = df['ВрС, ч'] * koef[0]
-        df['ЗпС п/раб'] = df['ВрС п/раб'] * koef[1]
-        df['ЗпМ'] = df['ВрМ, ч'] * koef[2]
-        df['ЗпМ п/раб'] = df['ВрМ п/раб'] * koef[3]
+        df['ЗпС'] = df['ВрС, ч'] * df['koef_storage']
+        df['ЗпС п/раб'] = df['ВрС п/раб'] * df['koef_storage_overtime']
+        df['ЗпМ'] = df['ВрМ, ч'] * df['koef_montage']
+        df['ЗпМ п/раб'] = df['ВрМ п/раб'] * df['koef_montage_overtime']
         df['Итого'] = df['ЗпС'] + df['ЗпС п/раб'] + df['ЗпМ'] + df['ЗпМ п/раб']
+        df = df.drop(columns=['koef_storage', 'koef_montage_overtime', 'koef_montage', 'koef_storage_overtime'])
         df.to_excel("Трудовая_ведомость.xlsx", index=False)
         file = FSInputFile("Трудовая_ведомость.xlsx")
         await bot.send_document(chat_id=worker_id, document=file)
@@ -177,8 +181,9 @@ async def handle_callback_query(callback_query: CallbackQuery, state: FSMContext
         id_name_dict = {}
         for i in cursor.fetchall():
             id_name_dict[i[0]] = i[1]
-        df = df.rename(columns = dict(zip(["worker_id", "start_of_day", 'end_of_day', 'work_hours', 'work_type'], ['Имя', "Начало дня", 'Конец дня', 'Часов отработано', 'Место работы'])))
-        df = df.drop(columns = ['id'])
+        df = df.rename(columns=dict(zip(["worker_id", "start_of_day", 'end_of_day', 'work_hours', 'work_type'],
+                                        ['Имя', "Начало дня", 'Конец дня', 'Часов отработано', 'Место работы'])))
+        df = df.drop(columns=['id'])
         df['Имя'] = df['Имя'].replace(id_name_dict)
         df['Место работы'] = df["Место работы"].replace({0: "Монтаж", 1: "Склад"})
         df.to_excel("journal.xlsx", index=False)
@@ -187,20 +192,29 @@ async def handle_callback_query(callback_query: CallbackQuery, state: FSMContext
         os.remove('journal.xlsx')
 
     elif callback_query.data == "change_salary":
-        await callback_query.message.answer("Введите новую ставку в формате:\n"
-                                            "Склад, Склад п/раб, Монтаж, Монтаж п/раб\n"
-                                            "(руб/час)")
-        await state.set_state(Koef_change.new_koef)
+        await callback_query.message.answer("Введите ФИО рабочего")
+        await state.set_state(Koef_change.name)
+
+
+@dp.message(Koef_change.name)
+async def change_koef1(message: Message, state: FSMContext):
+    await state.update_data(name=message.text)
+    await message.answer("Введите новую ставку в формате:\n"
+                         "Склад, Склад п/раб, Монтаж, Монтаж п/раб\n"
+                         "(руб/час)")
+    await state.set_state(Koef_change.new_koef)
+
 
 @dp.message(Koef_change.new_koef)
-async def change_koef(message: Message, state: FSMContext):
-    global koef
+async def change_koef2(message: Message, state: FSMContext):
     await state.update_data(new_koef=message.text)
     data = await state.get_data()
+    worker_name = data['name']
     new_koef = data['new_koef']
     try:
         new_koef = tuple(map(int, new_koef.split(",")))
-        cursor.execute(f"update koef set storage = {new_koef[0]}, storage_overtime = {new_koef[1]}, montage = {new_koef[2]}, montage_overtime = {new_koef[3]}")
+        cursor.execute(
+            f"update wokrers set koef_storage = {new_koef[0]}, koef_storage_overtime = {new_koef[1]}, koef_montage = {new_koef[2]}, koef_montage_overtime = {new_koef[3]} WHERE name = {worker_name}")
         await message.answer(f"Cтавка изменена")
     except:
         await message.answer("Неверный формат данных")
@@ -241,23 +255,24 @@ async def get_work_place(message: Message, state: FSMContext):
         cursor.execute(f"UPDATE workers SET status = 0 WHERE id = '{worker_id}'")
 
         cursor.execute(
-            f"INSERT INTO journal (worker_id, start_of_day, end_of_day, work_hours, work_type) VALUES ('{worker_id}', TIMESTAMP'{start_time}', TIMESTAMP'{end_time}', {work_hours}, {int(work_place == 'Склад')})")
+            f"INSERT INTO journal (worker_id, start_of_day, end_of_day, work_hours, work_type) VALUES ('{worker_id}', TIMESTAMP'{start_time}', TIMESTAMP'{end_time}', {work_hours+overtime}, {int(work_place == 'Склад')})")
         await message.answer("Рабочий день закончен", reply_markup=ReplyKeyboardRemove())
 
 
 async def month_change():
     df = pd.read_sql('SELECT * FROM workers', connection)
     df = df.drop(columns=['status', 'last_start_of_day'])
-    df = df.rename(columns=dict(
-        zip(['name', 'worktime_storage', 'worktime_storage_overtime', 'worktime_montage', 'worktime_montage_overtime'],
-            ['Имя', "ВрС, ч", 'ВрС п/раб', 'ВрМ, ч', 'ВрМ п/раб'])))
-    df['ЗпС'] = df['ВрС, ч'] * koef[0]
-    df['ЗпС п/раб'] = df['ВрС п/раб'] * koef[1]
-    df['ЗпМ'] = df['ВрМ, ч'] * koef[2]
-    df['ЗпМ п/раб'] = df['ВрМ п/раб'] * koef[3]
+    df = df.rename(columns=dict(zip(['name', 'worktime_storage', 'worktime_storage_overtime', 'worktime_montage',
+                                     'worktime_montage_overtime'],
+                                    ['Имя', "ВрС, ч", 'ВрС п/раб', 'ВрМ, ч', 'ВрМ п/раб'])))
+    df['ЗпС'] = df['ВрС, ч'] * df['koef_storage']
+    df['ЗпС п/раб'] = df['ВрС п/раб'] * df['koef_storage_overtime']
+    df['ЗпМ'] = df['ВрМ, ч'] * df['koef_montage']
+    df['ЗпМ п/раб'] = df['ВрМ п/раб'] * df['koef_montage_overtime']
     df['Итого'] = df['ЗпС'] + df['ЗпС п/раб'] + df['ЗпМ'] + df['ЗпМ п/раб']
+    df = df.drop(columns=['koef_storage', 'koef_montage_overtime', 'koef_montage', 'koef_storage_overtime'])
     df.to_excel("Трудовая_ведомость.xlsx", index=False)
-    file = FSInputFile(f"Трудовая_ведомость.xlsx")
+    file = FSInputFile("Трудовая_ведомость.xlsx")
 
     for admin_id in admin_ids:
         await bot.send_document(chat_id=admin_id, document=file)
@@ -266,12 +281,14 @@ async def month_change():
     cursor.execute(
         f"UPDATE workers SET worktime_storage = 0, worktime_storage_overtime = 0, worktime_montage = 0, worktime_montage_overtime = 0")
 
+
 async def loop():
     while True:
         now = datetime.datetime.now()
         if now.day == 1 and now.hour == 0 and now.minute == 0 and now.second == 0:
             await month_change()
         await asyncio.sleep(1)
+
 
 # Start polling
 async def main():
@@ -283,4 +300,3 @@ if __name__ == '__main__':
     import asyncio
 
     asyncio.run(main())
-
