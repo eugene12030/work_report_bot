@@ -113,14 +113,13 @@ async def help(message: Message):
 # Handle button presses
 @dp.callback_query()
 async def handle_callback_query(callback_query: CallbackQuery, state: FSMContext):
-    print(callback_query)
     worker_id = callback_query.from_user.id
     cursor.execute(f"SELECT status FROM workers WHERE id = '{worker_id}'")
-    status = cursor.fetchall()[0][0]
-    keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="Закончить рабочий день", callback_data="finish_day")]
-    ])
     if callback_query.data == "start_day":
+        status = cursor.fetchall()[0][0]
+        keyboard = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="Закончить рабочий день", callback_data="finish_day")]
+        ])
         if status == 0:
             start_time = datetime.datetime.now()
             cursor.execute(
@@ -131,6 +130,7 @@ async def handle_callback_query(callback_query: CallbackQuery, state: FSMContext
             await callback_query.message.answer("Рабочий день уже начат", reply_markup=keyboard)
 
     elif callback_query.data == "finish_day":
+        status = cursor.fetchall()[0][0]
         if status == 1:
             keyboard = ReplyKeyboardMarkup(
                 keyboard=[
