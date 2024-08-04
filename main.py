@@ -239,6 +239,7 @@ async def get_work_place(message: Message, state: FSMContext):
         cursor.execute(f"SELECT last_start_of_day FROM workers WHERE id = '{worker_id}'")
         start_time = cursor.fetchall()[0][0]
         work_hours = ((end_time - start_time).seconds // 60) / 60
+        print(work_hours)
         overtime = 0
         work_hours -= 1
         work_hours = max(work_hours, 0)
