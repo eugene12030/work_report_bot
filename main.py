@@ -86,7 +86,6 @@ async def process_name(message: Message, state: FSMContext):
     if name not in users_name:
         query = f"INSERT INTO workers (id, name, worktime_storage, worktime_storage_overtime, worktime_montage, worktime_montage_overtime, status, koef_storage, koef_storage_overtime, koef_montage, koef_montage_overtime) VALUES ('{message.from_user.id}', '{name}', 0, 0, 0, 0, 0, 445, 668, 500, 500);"
         cursor.execute(query)
-        # cursor.execute(f'INSERT INTO koef (id , storage, storage_overtime, montage, montage_overtime) VALUES ("{message.from_user.id}", 445, 668, 500, 500)')
         await message.answer("Вы успешно зарегистрированы")
     else:
         await message.answer("Ваше имя уже используется")
@@ -114,8 +113,8 @@ async def help(message: Message):
 @dp.callback_query()
 async def handle_callback_query(callback_query: CallbackQuery, state: FSMContext):
     worker_id = callback_query.from_user.id
-    cursor.execute(f"SELECT status FROM workers WHERE id = '{worker_id}'")
     if callback_query.data == "start_day":
+        cursor.execute(f"SELECT status FROM workers WHERE id = '{worker_id}'")
         status = cursor.fetchall()[0][0]
         keyboard = InlineKeyboardMarkup(inline_keyboard=[
             [InlineKeyboardButton(text="Закончить рабочий день", callback_data="finish_day")]
@@ -130,6 +129,7 @@ async def handle_callback_query(callback_query: CallbackQuery, state: FSMContext
             await callback_query.message.answer("Рабочий день уже начат", reply_markup=keyboard)
 
     elif callback_query.data == "finish_day":
+        cursor.execute(f"SELECT status FROM workers WHERE id = '{worker_id}'")
         status = cursor.fetchall()[0][0]
         if status == 1:
             keyboard = ReplyKeyboardMarkup(
@@ -149,6 +149,7 @@ async def handle_callback_query(callback_query: CallbackQuery, state: FSMContext
         cursor.execute(
             f"SELECT worktime_storage, worktime_storage_overtime, worktime_montage, worktime_montage_overtime FROM workers WHERE id = '{worker_id}'")
         cur_stats = cursor.fetchall()[0]
+        cur_stats = [int(x) for x in cur_stats]
         cursor.execute(
             f"SELECT koef_storage, koef_storage_overtime, koef_montage, koef_montage_overtime FROM workers WHERE id = '{worker_id}'")
         koef = cursor.fetchall()[0]
@@ -163,6 +164,10 @@ async def handle_callback_query(callback_query: CallbackQuery, state: FSMContext
         df = df.rename(columns=dict(zip(['name', 'worktime_storage', 'worktime_storage_overtime', 'worktime_montage',
                                          'worktime_montage_overtime'],
                                         ['Имя', "ВрС, ч", 'ВрС п/раб', 'ВрМ, ч', 'ВрМ п/раб'])))
+        df['ВрС, ч'] = df['ВрС, ч'].astype(int)
+        df['ВрС п/раб'] = df['ВрС п/раб'].astype(int)
+        df['ВрМ, ч'] = df['ВрМ, ч'].astype(int)
+        df['ВрМ п/раб'] = df['ВрМ п/раб'].astype(int)
         df['ЗпС'] = df['ВрС, ч'] * df['koef_storage']
         df['ЗпС п/раб'] = df['ВрС п/раб'] * df['koef_storage_overtime']
         df['ЗпМ'] = df['ВрМ, ч'] * df['koef_montage']
@@ -233,7 +238,7 @@ async def get_work_place(message: Message, state: FSMContext):
         end_time = datetime.datetime.now()
         cursor.execute(f"SELECT last_start_of_day FROM workers WHERE id = '{worker_id}'")
         start_time = cursor.fetchall()[0][0]
-        work_hours = (end_time - start_time).seconds // 3600
+        work_hours = ((end_time - start_time).seconds // 60) / 60
         overtime = 0
         work_hours -= 1
         work_hours = max(work_hours, 0)
@@ -265,6 +270,10 @@ async def month_change():
     df = df.rename(columns=dict(zip(['name', 'worktime_storage', 'worktime_storage_overtime', 'worktime_montage',
                                      'worktime_montage_overtime'],
                                     ['Имя', "ВрС, ч", 'ВрС п/раб', 'ВрМ, ч', 'ВрМ п/раб'])))
+    df['ВрС, ч'] = df['ВрС, ч'].astype(int)
+    df['ВрС п/раб'] = df['ВрС п/раб'].astype(int)
+    df['ВрМ, ч'] = df['ВрМ, ч'].astype(int)
+    df['ВрМ п/раб'] = df['ВрМ п/раб'].astype(int)
     df['ЗпС'] = df['ВрС, ч'] * df['koef_storage']
     df['ЗпС п/раб'] = df['ВрС п/раб'] * df['koef_storage_overtime']
     df['ЗпМ'] = df['ВрМ, ч'] * df['koef_montage']
