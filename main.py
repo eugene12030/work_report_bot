@@ -241,8 +241,8 @@ async def get_work_place(message: Message, state: FSMContext):
         work_hours = ((end_time - start_time).seconds // 60) / 60
         print(work_hours)
         overtime = 0
-        work_hours -= 1
-        work_hours = max(work_hours, 0)
+        if work_hours > 1:
+            work_hours -= 1
         cursor.execute(
             f"SELECT worktime_storage, worktime_storage_overtime, worktime_montage, worktime_montage_overtime FROM workers WHERE id = '{worker_id}'")
         cur_stats = cursor.fetchall()[0]
