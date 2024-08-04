@@ -10,6 +10,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, InlineKeyboardButton, InlineKeyboardMarkup, CallbackQuery, ReplyKeyboardMarkup, \
     KeyboardButton, ReplyKeyboardRemove, FSInputFile
 from aiogram.fsm.state import State, StatesGroup
+from decimal import Decimal
 
 API_TOKEN = '7483654306:AAGg8aJh0fpJp38dejeD-2LjnsfJIY4B2w8'
 
@@ -242,6 +243,7 @@ async def get_work_place(message: Message, state: FSMContext):
         overtime = 0
         if work_hours > 1:
             work_hours -= 1
+        work_hours = Decimal(work_hours)
         cursor.execute(
             f"SELECT worktime_storage, worktime_storage_overtime, worktime_montage, worktime_montage_overtime FROM workers WHERE id = '{worker_id}'")
         cur_stats = cursor.fetchall()[0]
