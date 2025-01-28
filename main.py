@@ -12,7 +12,6 @@ from aiogram.types import Message, InlineKeyboardButton, InlineKeyboardMarkup, C
 from aiogram.fsm.state import State, StatesGroup
 from decimal import Decimal
 
-API_TOKEN = '7483654306:AAGg8aJh0fpJp38dejeD-2LjnsfJIY4B2w8'
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
